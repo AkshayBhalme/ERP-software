@@ -1,0 +1,15 @@
+{
+  "name": "krushi-erp",
+  "version": "1.0.0",
+  "description": "Krushi ERP - offline-first agri shop software",
+  "author": "Krushi ERP",
+  "main": "main.js",
+  "scripts": { "start": "electron .", "dist": "electron-builder --win --publish never" },
+  "build": {
+    "appId": "in.krushi.erp",
+    "productName": "Krushi ERP",
+    "files": ["main.js", "index.html", "sw.js", "manifest.json"],
+    "win": { "target": "nsis" }
+  },
+  "devDependencies": { "electron": "^33.0.0", "electron-builder": "^25.0.0" }
+}
