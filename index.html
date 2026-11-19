@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Krushi ERP</title><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#2e6b3a">
+<style>
+:root{--bg:#f4f1e8;--card:#fff;--tx:#23301f;--mut:#667262;--pri:#2e6b3a;--on:#fff;--pri2:#e8f0e2;--acc:#b8862b;--bad:#b3402e;--bd:#dcd6c3}
+@media(prefers-color-scheme:dark){:root{--bg:#171c15;--card:#1f261c;--tx:#e8eadf;--mut:#9aa595;--pri:#6fae79;--on:#10200f;--pri2:#26331f;--acc:#d3a24a;--bad:#e2806f;--bd:#33402e}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,"Noto Sans","Noto Sans Devanagari","Nirmala UI",Mangal,sans-serif}
+.hd{background:linear-gradient(135deg,#2e6b3a,#4a8a50);color:#fff;padding:8px 14px;display:flex;gap:12px;align-items:center;height:48px;position:sticky;top:0;z-index:20}
+.hd b{flex:1;font-size:17px}.hd button{background:rgba(255,255,255,.2);color:#fff;padding:4px 10px}.pill{font-size:12px;padding:3px 10px;border-radius:99px;background:rgba(255,255,255,.2)}
+#app{display:flex;min-height:calc(100vh - 48px)}
+aside{width:230px;background:#25402b;color:#e6efdc;padding:6px 0;flex:none;overflow:auto;max-height:calc(100vh - 48px);position:sticky;top:48px}
+aside h4{margin:10px 14px 3px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#d8c27a}
+aside a{display:block;padding:5px 18px;cursor:pointer;font-size:14px}aside a:hover,aside a.on{background:#33573a}
+main{flex:1;padding:14px;min-width:0}
+@media(max-width:800px){aside{display:none;position:fixed;top:48px;bottom:0;z-index:15}body.sb aside{display:block}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:12px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.stat{background:var(--pri2);border-left:5px solid var(--pri);border-radius:8px;padding:10px}.stat small{color:var(--mut);display:block}.stat b{font-size:19px}.stat.w{border-color:var(--acc)}.stat.d{border-color:var(--bad)}
+h2{margin:0 0 10px;font-size:19px;color:var(--pri)}h3{margin:2px 0 8px;font-size:16px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;background:var(--card);font-size:14px}
+th{background:var(--pri2);text-align:left;padding:7px 8px;border:1px solid var(--bd);white-space:nowrap}td{padding:6px 8px;border:1px solid var(--bd)}
+.r{text-align:right}tr.cl{cursor:pointer}tr.cl:hover td{background:var(--pri2)}tr.ft td{font-weight:700;background:var(--pri2)}
+button{font:inherit;border:0;border-radius:6px;padding:7px 14px;background:var(--pri);color:var(--on);cursor:pointer}
+button.ghost{background:transparent;color:var(--pri);border:1px solid var(--pri)}button.sm{padding:3px 9px;font-size:13px}button.del{background:var(--bad);color:#fff}
+input,select{font:inherit;width:100%;padding:7px;border:1px solid var(--bd);border-radius:6px;background:var(--card);color:var(--tx)}
+td input,td select{padding:4px;min-width:60px}label{display:block;font-size:13px;color:var(--mut);margin-bottom:8px}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.bar input,.bar select{width:auto}
+.f2{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:0 12px}
+.bad{color:var(--bad);font-weight:600}.ok{color:var(--pri);font-weight:600}.mut{color:var(--mut)}
+dialog{border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);width:min(94vw,440px);padding:16px}dialog::backdrop{background:rgba(0,0,0,.45)}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.bars{display:flex;align-items:flex-end;gap:6px;height:90px}.bars div{flex:1;background:var(--pri);border-radius:3px 3px 0 0;min-height:2px}.bl{display:flex;gap:6px}.bl small{flex:1;text-align:center;color:var(--mut);font-size:11px}
+#lock{position:fixed;inset:0;background:var(--bg);z-index:99;display:flex;align-items:center;justify-content:center}
+</style></head><body>
+<div class="hd"><button onclick="document.body.classList.toggle('sb')">☰</button><b id="ttl"></b><span class="pill" id="pill"></span></div>
+<div id="app"><aside id="side"></aside><main id="v"></main></div>
+<script>
+"use strict";
+const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=x=>parseFloat(x)||0,uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5),clone=o=>JSON.parse(JSON.stringify(o));
+const ymd=d=>{d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const money=n=>'₹'+num(n).toLocaleString('en-IN',{minimumFractionDigits:num(S.cfg.dec),maximumFractionDigits:num(S.cfg.dec)});
+const dc=b=>money(Math.abs(b))+(b<-0.004?' Cr':b>0.004?' Dr':'');
+const t=k=>({save:'Save'}[k]||k);
+const GR=['Sundry Debtors','Sundry Creditors','Cash-in-hand','Bank Accounts','Sales Accounts','Purchase Accounts','Direct Expenses','Indirect Expenses','Direct Incomes','Indirect Incomes','Capital Account','Loans','Fixed Assets','Duties & Taxes','Current Assets','Current Liabilities'];
+const VT={sale:'Sales',purch:'Purchase',sret:'Sales Return',pret:'Purchase Return',rcpt:'Receipt',pay:'Payment',jrn:'Journal',cntr:'Contra'},ITY={sale:1,purch:1,sret:1,pret:1};
+const SYS=[['cash','Cash','Cash-in-hand'],['bank','Bank Account','Bank Accounts'],['sales','Sales','Sales Accounts'],['purch','Purchase','Purchase Accounts'],['gsto','GST Output','Duties & Taxes'],['gsti','GST Input','Duties & Taxes'],['rnd','Round Off','Indirect Expenses'],['cap','Capital','Capital Account']];
+const DEF={co:{name:'My Krushi Kendra',addr:'',phone:'',gstin:'',state:'Maharashtra',licS:'',licF:'',licP:'',fy:'2026-27'},
+cfg:{gst:'yes',batch:'yes',negStock:'no',round:'yes',dec:'2',narr:'',pin:'',autoSms:'no',head:'',foot:'Thank you! Visit again',
+pre:{sale:'S-',purch:'P-',sret:'SR-',pret:'PR-',rcpt:'R-',pay:'PY-',jrn:'J-',cntr:'C-'},
+tSale:'{shop}: Bill {no} Rs.{amt}, paid {paid}, balance Rs.{bal}. Thank you',tRcpt:'{shop}: received Rs.{amt}. Balance Rs.{bal}. Thank you',tRem:'{shop}: {name}, your pending balance is Rs.{bal}. Please pay soon.'},
+settings:{smsUrl:'',smsMethod:'GET',smsBody:'',smsHeaders:'',clientId:'',file:'krushi-erp-data.json',last:0},
+groups:['Seeds','Fertilizers','Pesticides','Tools','Other'],units:['kg','ltr','pkt','bag','nos','gm','ml'],
+ledgers:SYS.map(x=>({id:x[0],name:x[1],grp:x[2],op:0,ot:'Dr',sys:1})),items:[],vouchers:[],seq:{},outbox:[],dirty:false};
+let S=clone(DEF),tab='dash',vf=null,_bm=null,_sm=null,RL='cash';
+const mg=(a,b)=>{for(const k in b){if(b[k]&&typeof b[k]=='object'&&!Array.isArray(b[k]))a[k]=mg(a[k]||{},b[k]);else a[k]=b[k]}return a};
+const RF={from:(()=>{const d=new Date();return(d.getMonth()>=3?d.getFullYear():d.getFullYear()-1)+'-04-01'})(),to:ymd()};
+/* ---------- storage: IndexedDB (fallback localStorage) ---------- */
+const idb=()=>new Promise((res,rej)=>{const r=indexedDB.open('krushi',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+async function load(){try{const d=await idb();return await new Promise(r=>{const q=d.transaction('kv').objectStore('kv').get('db');q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)})}catch(e){try{return JSON.parse(localStorage.getItem('krushi'))}catch(_){return null}}}
+async function persist(){try{const d=await idb();d.transaction('kv','readwrite').objectStore('kv').put(JSON.parse(JSON.stringify(S)),'db')}catch(e){try{localStorage.setItem('krushi',JSON.stringify(S))}catch(_){}}}
+let st;function save(){_bm=_sm=null;S.dirty=true;persist();pill();clearTimeout(st);st=setTimeout(()=>sync(false),4000)}
+
+/* ---------- SMS (queued when offline) ---------- */
+async function smsNow(o){const s=S.settings;if(!s.smsUrl)throw new Error('SMS API not set');
+const j=x=>JSON.stringify(x).slice(1,-1);const f=(a)=>a.replace(/\{to\}/g,encodeURIComponent(o.to)).replace(/\{msg\}/g,encodeURIComponent(o.msg));
+const init={method:s.smsMethod};let h={};try{h=s.smsHeaders?JSON.parse(s.smsHeaders):{}}catch(e){throw new Error('Headers must be JSON')}
+if(s.smsMethod==='POST'){init.body=s.smsBody.replace(/\{to\}/g,j(o.to)).replace(/\{msg\}/g,j(o.msg));h['Content-Type']=h['Content-Type']||'application/json; charset=UTF-8'}
+init.headers=h;const r=await fetch(f(s.smsUrl),init);if(!r.ok)throw new Error('SMS HTTP '+r.status)}
+async function sms(to,msg){if(!to)return alert('No mobile number');S.outbox.push({id:uid(),to,msg});save();await flush()}
+async function flush(){if(!navigator.onLine||!S.settings.smsUrl)return;for(const o of [...S.outbox]){try{await smsNow(o);S.outbox=S.outbox.filter(x=>x.id!==o.id);save()}catch(e){console.warn(e);break}}pill()}
+
+/* ---------- Google Drive sync ---------- */
+let tok=null,texp=0;
+const gis=()=>new Promise((res,rej)=>{if(window.google&&google.accounts)return res();const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;s.onerror=()=>rej(new Error('Cannot load Google script'));document.head.appendChild(s)});
+const auth=ia=>new Promise((res,rej)=>{google.accounts.oauth2.initTokenClient({client_id:S.settings.clientId,scope:'https://www.googleapis.com/auth/drive.file',
+callback:r=>{if(r.access_token){tok=r.access_token;texp=Date.now()+(r.expires_in-60)*1000;res()}else rej(new Error(r.error||'auth'))},error_callback:e=>rej(new Error(e.type||'auth'))}).requestAccessToken({prompt:ia?'consent':''})});
+async function findId(name){const q=encodeURIComponent("name='"+name.replace(/'/g,"\\'")+"' and trashed=false");const r=await fetch('https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id)',{headers:{Authorization:'Bearer '+tok}});if(!r.ok)throw new Error('Drive '+r.status);const j=await r.json();return j.files&&j.files[0]&&j.files[0].id}
+async function upsert(name,obj){const id=await findId(name),b='kr'+Date.now();
+const body='--'+b+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify({name,mimeType:'application/json'})+'\r\n--'+b+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify(obj)+'\r\n--'+b+'--';
+const r=await fetch('https://www.googleapis.com/upload/drive/v3/files'+(id?'/'+id:'')+'?uploadType=multipart',{method:id?'PATCH':'POST',headers:{Authorization:'Bearer '+tok,'Content-Type':'multipart/related; boundary='+b},body});
+if(!r.ok)throw new Error('Drive upload '+r.status)}
+let busy=false;
+async function sync(ia){if(busy||!navigator.onLine||!S.settings.clientId||(!ia&&!S.dirty))return;busy=true;pill('Syncing…');
+try{await gis();if(Date.now()>texp)await auth(ia);S.dirty=false;S.settings.last=Date.now();await upsert(S.settings.file||'krushi-erp-data.json',S);await upsert('vasooli-sync.json',vasooli());persist();if(ia)alert('✓ Synced to Google Drive')}
+catch(e){S.dirty=true;if(ia)alert('Sync failed: '+e.message)}busy=false;pill()}
+async function restore(){if(!S.settings.clientId||!navigator.onLine)return alert('Need internet + Client ID');if(!confirm('Replace local data with Drive backup?'))return;
+try{await gis();if(Date.now()>texp)await auth(true);const id=await findId(S.settings.file);if(!id)return alert('Backup not found');const r=await fetch('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media',{headers:{Authorization:'Bearer '+tok}});const d=await r.json();S=Object.assign(JSON.parse(JSON.stringify(DEF)),d);S.settings=Object.assign({},DEF.settings,d.settings);persist();go(tab)}catch(e){alert('Restore failed: '+e.message)}}
+
+function pill(m){const n=S.outbox.length;$('#pill').textContent=m||((navigator.onLine?'● Online':'○ Offline')+(S.dirty?' · sync pending':' · saved')+(n?' · SMS '+n:''))}
+function modal(title,fields,ok){const d=document.createElement('dialog');
+d.innerHTML='<form><h3>'+esc(title)+'</h3>'+fields.map(f=>'<label>'+esc(f.l)+(f.o?'<select name="'+f.k+'">'+f.o.map(o=>'<option value="'+esc(o[0])+'"'+(o[0]==f.v?' selected':'')+'>'+esc(o[1])+'</option>').join('')+'</select>':'<input name="'+f.k+'" type="'+(f.t||'text')+'" value="'+esc(f.v)+'"'+(f.t=='number'?' step="any" inputmode="decimal"':'')+'>')+'</label>').join('')+'<div class="row"><button type="button" class="ghost" id="x">✕</button><button>'+t('save')+'</button></div></form>';
+document.body.appendChild(d);d.querySelector('#x').onclick=()=>d.close();d.onclose=()=>d.remove();
+d.querySelector('form').onsubmit=e=>{e.preventDefault();ok(Object.fromEntries(new FormData(e.target)));d.close()};d.showModal()}
+
+/* ---------- accounting engine ---------- */
+const led=id=>S.ledgers.find(x=>x.id==id)||{name:'?',grp:''},lname=id=>led(id).name;
+function calc(v){let net=0,tax=0;(v.lines||[]).forEach(l=>{const a=num(l.qty)*num(l.rate)*(1-num(l.disc)/100);net+=a;if(S.cfg.gst=='yes')tax+=a*num(l.gst)/100});const g=net+tax,tt=S.cfg.round=='yes'?Math.round(g):g;return{net,tax,total:+tt.toFixed(2),rnd:+(tt-g).toFixed(2)}}
+function post(v){const r=[],A=(l,dr,cr)=>{if(l&&(dr||cr))r.push({l,dr:+dr.toFixed(2),cr:+cr.toFixed(2)})},T=v.type;
+if(ITY[T]){const c=calc(v),pd=T=='sale'||T=='pret',sl=T=='sale'||T=='sret',main=sl?'sales':'purch',tx=sl?'gsto':'gsti';
+A(v.party,pd?c.total:0,pd?0:c.total);A(main,pd?0:c.net,pd?c.net:0);A(tx,pd?0:c.tax,pd?c.tax:0);
+A('rnd',(pd?c.rnd<0:c.rnd>0)?Math.abs(c.rnd):0,(pd?c.rnd>0:c.rnd<0)?Math.abs(c.rnd):0);
+if(v.paid>0){A(v.pmode,pd?v.paid:0,pd?0:v.paid);A(v.party,pd?0:v.paid,pd?v.paid:0)}}
+else if(T=='rcpt'||T=='cntr'){A(v.mode,v.amt,0);A(v.party,0,v.amt)}else if(T=='pay'){A(v.party,v.amt,0);A(v.mode,0,v.amt)}
+else if(T=='jrn')(v.jl||[]).forEach(x=>A(x.l,x.dr,x.cr));return r}
+const BM=()=>{if(_bm)return _bm;_bm={};S.ledgers.forEach(l=>_bm[l.id]=(l.ot=='Cr'?-1:1)*num(l.op));S.vouchers.forEach(v=>post(v).forEach(p=>_bm[p.l]=(_bm[p.l]||0)+p.dr-p.cr));return _bm};
+const bal=id=>BM()[id]||0,gs=g=>S.ledgers.filter(l=>l.grp==g).reduce((a,l)=>a+bal(l.id),0);
+const SM=ex=>{const m={};S.items.forEach(i=>m[i.id]=num(i.op));S.vouchers.forEach(v=>{if(v.id==ex||!ITY[v.type])return;const s={purch:1,sret:1,sale:-1,pret:-1}[v.type];v.lines.forEach(l=>{m[l.iid]=(m[l.iid]||0)+s*num(l.qty)})});return m};
+const stk=()=>_sm||(_sm=SM());
+const vasooli=()=>{const D=S.ledgers.filter(l=>l.grp=='Sundry Debtors'),ids=new Set(D.map(l=>l.id));return{v:1,updated:new Date().toISOString(),shop:S.co.name,
+customers:D.map(l=>({id:l.id,name:l.name,village:l.village||'',phone:l.phone||'',balance:+bal(l.id).toFixed(2)})),
+ledger:S.vouchers.filter(v=>ids.has(v.party)).map(v=>({id:v.id,date:v.date,cid:v.party,type:{sale:'sale',rcpt:'payment',sret:'return'}[v.type]||v.type,amount:v.total,paid:v.paid||0}))}};
+const nextNo=T=>S.cfg.pre[T]+(num(S.seq[T])+1);
+const fm=(s,o)=>s.replace(/\{(\w+)\}/g,(_,k)=>o[k]==null?'':o[k]);
+
+/* ---------- UI helpers ---------- */
+const tbl=(h,rows,ft)=>{const al=i=>h[i][0]=='>'?' class="r"':'';return '<div class="tw"><table><tr>'+h.map((x,i)=>'<th'+al(i)+'>'+esc(x.replace(/^>/,''))+'</th>').join('')+'</tr>'+rows.map(r=>'<tr'+(r.oc?' class="cl" onclick="'+r.oc+'"':'')+(r.s?' data-s="'+esc(r.s.toLowerCase())+'"':'')+'>'+r.c.map((x,i)=>'<td'+al(i)+'>'+x+'</td>').join('')+'</tr>').join('')+(ft?'<tr class="ft">'+ft.map((x,i)=>'<td'+al(i)+'>'+x+'</td>').join('')+'</tr>':'')+'</table></div>'};
+const flt=q=>document.querySelectorAll('tr[data-s]').forEach(r=>r.style.display=r.dataset.s.includes(q.toLowerCase())?'':'none');
+const rb=x=>'<div class="bar">From <input type="date" value="'+RF.from+'" onchange="RF.from=this.value;go(tab)"> To <input type="date" value="'+RF.to+'" onchange="RF.to=this.value;go(tab)">'+(x||'')+'</div>';
+const inR=d=>d>=RF.from&&d<=RF.to,sm=a=>a.reduce((x,y)=>x+y,0);
+const gp=p=>p.split('.').reduce((o,k)=>o&&o[k],S);
+const sp=(p,v)=>{const a=p.split('.'),k=a.pop();let o=S;a.forEach(x=>o=o[x]);o[k]=v;save()};
+const cfi=(p,l,o)=>'<label>'+l+(Array.isArray(o)?'<select onchange="sp(\''+p+'\',this.value)">'+o.map(x=>'<option'+(gp(p)==x?' selected':'')+'>'+x+'</option>').join('')+'</select>':'<input'+(o=='n'?' type="number" step="any"':'')+' value="'+esc(gp(p))+'" onchange="sp(\''+p+'\',this.value)">')+'</label>';
+const page=(h,b)=>{$('#v').innerHTML='<h2>'+h+'</h2>'+b};
+const MENU=[['Masters',[['Accounts (Ledgers)','m:ledger'],['Items','m:item'],['Item Groups','g:groups'],['Units','g:units']]],
+['Transactions',[['Sales  [F8]','v:sale'],['Purchase  [F9]','v:purch'],['Receipt  [F6]','v:rcpt'],['Payment  [F5]','v:pay'],['Sales Return  [Ctrl+F8]','v:sret'],['Purchase Return  [Ctrl+F9]','v:pret'],['Journal  [F7]','v:jrn'],['Contra  [F4]','v:cntr']]],
+['Display',[['Day Book','r:day'],['Sales Register','r:sale'],['Purchase Register','r:purch'],['Ledger','r:led'],['Trial Balance','r:tb'],['Profit & Loss','r:pl'],['Stock Summary','r:stk'],['Outstanding Receivable','r:rec'],['Outstanding Payable','r:pby'],['GST Summary','r:gst'],['Expiry / Low Stock','r:exp']]],
+['Utilities',[['SMS Outbox','u:sms'],['Backup · Drive Sync','u:bak']]],
+['Configuration',[['Company','c:co'],['Features','c:ft'],['Voucher Series','c:vs'],['Print','c:pr'],['SMS API','c:sms'],['Google Drive','c:drv'],['Security','c:sec']]]];
+const side=()=>{$('#side').innerHTML='<a class="'+(tab=='dash'?'on':'')+'" onclick="nav(\'dash\')">🏠 Gateway</a>'+MENU.map(g=>'<h4>'+g[0]+'</h4>'+g[1].map(x=>'<a class="'+(x[1]==tab?'on':'')+'" onclick="nav(\''+x[1]+'\')">'+x[0]+'</a>').join('')).join('')};
+function nav(k){document.body.classList.remove('sb');k.startsWith('v:')?vnew(k.slice(2)):go(k)}
+function go(k){_bm=_sm=null;tab=k;const[a,b]=k.split(':');(R[a]||R.dash)(b);side();pill();$('#ttl').textContent='🌾 '+S.co.name+' · FY '+S.co.fy}
+
+/* ---------- masters ---------- */
+const MF={ledger:{t:'Account',a:'ledgers',f:[['name','Name'],['grp','Under Group','sel',GR],['phone','Mobile','tel'],['village','Village / City'],['addr','Address'],['gstin','GSTIN'],['op','Opening Balance','number'],['ot','Dr / Cr','sel',['Dr','Cr']],['limit','Credit Limit','number'],['days','Credit Days','number']]},
+item:{t:'Item',a:'items',f:[['name','Item Name'],['grp','Item Group','sel','groups'],['unit','Unit','sel','units'],['hsn','HSN Code'],['gst','GST %','number'],['sp','Sale Price','number'],['pp','Purchase Price','number'],['mrp','MRP','number'],['op','Opening Stock','number'],['min','Min Stock Alert','number'],['batch','Batch / Lot'],['exp','Expiry Date','date'],['loc','Rack / Location'],['mfr','Company / Brand']]}};
+const opts=o=>(typeof o=='string'?S[o]:o).map(x=>[x,x]);
+function mform(k,id){const c=MF[k],x=S[c.a].find(y=>y.id==id)||{id:uid(),op:0,ot:'Dr',gst:0,sp:0,pp:0,min:0,unit:S.units[0],grp:k=='ledger'?GR[0]:S.groups[0]},nw=!S[c.a].includes(x);
+modal((nw?'New ':'Edit ')+c.t,c.f.filter(f=>!(x.sys&&f[0]=='grp')).map(f=>({k:f[0],l:f[1],t:f[2]!='sel'?f[2]:'text',v:x[f[0]],o:f[2]=='sel'?opts(f[3]):null})),o=>{
+if(!o.name.trim())return alert('Name required');if(S[c.a].some(y=>y.id!=x.id&&y.name==o.name.trim()))return alert('Name already exists');
+c.f.forEach(f=>{if(f[2]=='number'&&f[0] in o)o[f[0]]=num(o[f[0]])});Object.assign(x,o,{name:o.name.trim()});if(nw)S[c.a].push(x);save();go(tab)})}
+function mdel(k,id){const a=MF[k].a,x=S[a].find(y=>y.id==id);if(x.sys)return alert('System account cannot be deleted');
+if(S.vouchers.some(v=>k=='ledger'?post(v).some(p=>p.l==id)||v.party==id:(v.lines||[]).some(l=>l.iid==id)))return alert('Used in vouchers - cannot delete');
+if(confirm('Delete '+x.name+'?')){S[a]=S[a].filter(y=>y.id!=id);save();go(tab)}}
+function gadd(k){modal('New',[{k:'n',l:'Name',v:''}],o=>{const n=o.n.trim();if(n&&!S[k].includes(n)){S[k].push(n);save();go(tab)}})}
+function gdel(k,n){if(S.items.some(i=>i[k=='groups'?'grp':'unit']==n))return alert('In use');S[k]=S[k].filter(x=>x!=n);save();go(tab)}
+
+/* ---------- voucher entry ---------- */
+function vnew(T){vf={type:T,id:uid(),date:ymd(),mode:'cash',pmode:'cash',paid:'',amt:'',pn:'',narr:S.cfg.narr,lines:[{}],jl:[{},{}],isNew:1};go('f')}
+function vedit(id){vf=clone(S.vouchers.find(v=>v.id==id));vf.pn=vf.party?lname(vf.party):'';vf.jl=(vf.jl||[]).map(r=>({n:lname(r.l),dr:r.dr||'',cr:r.cr||''}));if(!vf.jl.length)vf.jl=[{},{}];
+if(vf.lines)vf.lines.forEach(l=>l.n=(S.items.find(i=>i.id==l.iid)||{}).name);else vf.lines=[{}];go('f')}
+function vhtml(){const T=vf.type,I=ITY[T],cb=l=>l.grp=='Cash-in-hand'||l.grp=='Bank Accounts';
+const sel=(k,fl)=>'<select onchange="vf.'+k+'=this.value">'+S.ledgers.filter(fl).map(l=>'<option value="'+l.id+'"'+(l.id==vf[k]?' selected':'')+'>'+esc(l.name)+'</option>').join('')+'</select>';
+const PL={sale:'Party (Customer)',sret:'Party (Customer)',purch:'Party (Supplier)',pret:'Party (Supplier)',rcpt:'Received From',pay:'Paid To',cntr:'From A/c'};
+let h='<datalist id="dlL">'+S.ledgers.map(l=>'<option value="'+esc(l.name)+'">').join('')+'</datalist><datalist id="dlI">'+S.items.map(i=>'<option value="'+esc(i.name)+'">').join('')+'</datalist><h2>'+VT[T]+' Voucher</h2><div class="card"><div class="f2"><label>Date<input type="date" value="'+vf.date+'" onchange="vf.date=this.value"></label><label>Voucher No<input value="'+esc(vf.isNew?nextNo(T):vf.no)+'" readonly></label>';
+if(T!='jrn')h+='<label>'+PL[T]+'<input list="dlL" value="'+esc(vf.pn)+'" onchange="vf.pn=this.value"></label>';
+if(!I&&T!='jrn')h+='<label>'+(T=='rcpt'?'Deposit To':T=='pay'?'Paid From':'To A/c')+sel('mode',cb)+'</label><label>Amount<input type="number" step="any" inputmode="decimal" value="'+esc(vf.amt)+'" onchange="vf.amt=this.value"></label>';
+h+='</div></div>';
+if(I){const bt=S.cfg.batch=='yes'&&T=='purch',g=S.cfg.gst=='yes';
+h+='<div class="card tw"><table><tr><th>#</th><th>Item</th>'+(bt?'<th>Batch</th><th>Expiry</th>':'')+'<th>Qty</th><th>Rate</th><th>Disc%</th>'+(g?'<th>GST%</th>':'')+'<th class="r">Amount</th><th></th></tr>'+vf.lines.map((l,i)=>{const X=(k,ty)=>'<input id="'+k+i+'" '+(ty?'type="'+ty+'" ':'')+'value="'+esc(l[k])+'" oninput="ln('+i+',\''+k+'\',this.value)">';
+return '<tr><td>'+(i+1)+'</td><td><input list="dlI" value="'+esc(l.n)+'" onchange="li('+i+',this.value)"></td>'+(bt?'<td>'+X('batch')+'</td><td>'+X('exp','date')+'</td>':'')+'<td>'+X('qty','number')+'</td><td>'+X('rate','number')+'</td><td>'+X('disc','number')+'</td>'+(g?'<td>'+X('gst','number')+'</td>':'')+'<td class="r" id="a'+i+'"></td><td><button class="sm del" onclick="vf.lines.splice('+i+',1);if(!vf.lines.length)vf.lines.push({});vrender()">✕</button></td></tr>'}).join('')+'</table></div><div class="bar"><button class="ghost" onclick="vf.lines.push({});vrender()">+ Add item</button></div><div class="card" id="vt"></div><div class="card f2"><label>'+(T=='sale'||T=='pret'?'Amount received now':'Amount paid now')+'<input type="number" step="any" value="'+esc(vf.paid)+'" onchange="vf.paid=this.value"></label><label>Through'+sel('pmode',cb)+'</label></div>'}
+if(T=='jrn')h+='<div class="card tw"><table><tr><th>Account</th><th>Debit</th><th>Credit</th></tr>'+vf.jl.map((r,i)=>'<tr><td><input list="dlL" value="'+esc(r.n)+'" onchange="vf.jl['+i+'].n=this.value"></td><td><input type="number" step="any" value="'+esc(r.dr)+'" onchange="vf.jl['+i+'].dr=this.value"></td><td><input type="number" step="any" value="'+esc(r.cr)+'" onchange="vf.jl['+i+'].cr=this.value"></td></tr>').join('')+'</table></div><div class="bar"><button class="ghost" onclick="vf.jl.push({});vrender()">+ Add row</button></div>';
+return h+'<div class="card"><label>Narration<input value="'+esc(vf.narr)+'" onchange="vf.narr=this.value"></label></div><div class="bar"><button onclick="vsave(0)">Save</button><button class="ghost" onclick="vsave(1)">Save &amp; New</button>'+(vf.isNew?'':(I?'<button class="ghost" onclick="printV(\''+vf.id+'\')">Print</button>':'')+'<button class="del" onclick="vdel(\''+vf.id+'\')">Delete</button>')+'<button class="ghost" onclick="go(\'dash\')">Close</button></div>'}
+function vrender(){$('#v').innerHTML=vhtml();tot()}
+function tot(){if(!ITY[vf.type])return;const c=calc(vf);vf.lines.forEach((l,i)=>{const e=$('#a'+i);if(e)e.textContent=money(num(l.qty)*num(l.rate)*(1-num(l.disc)/100))});const e=$('#vt');if(e)e.innerHTML='<div class="row"><span>Net '+money(c.net)+' · GST '+money(c.tax)+' · Round '+c.rnd+'</span><b style="font-size:18px">Total '+money(c.total)+'</b></div>'}
+function ln(i,k,v){vf.lines[i][k]=v;tot()}
+function li(i,n){const it=S.items.find(x=>x.name==n),L=vf.lines[i];L.n=n;if(it){L.iid=it.id;L.rate=(vf.type=='purch'||vf.type=='pret')?it.pp:it.sp;L.gst=it.gst;L.qty=L.qty||1;L.disc=L.disc||0;['qty','rate','gst','disc'].forEach(k=>{const e=$('#'+k+i);if(e)e.value=L[k]})}else L.iid='';tot()}
+function vsave(nw){const T=vf.type,L=n=>(S.ledgers.find(x=>x.name==n)||{}).id,v={id:vf.id,type:T,no:vf.no,date:vf.date,narr:vf.narr||'',mode:vf.mode,pmode:vf.pmode,paid:num(vf.paid)};
+if(!v.date)return alert('Date required');
+if(ITY[T]){v.party=L(vf.pn);if(!v.party)return alert('Select the party from the list (create it in Masters if new)');
+v.lines=vf.lines.filter(l=>l.iid).map(l=>({iid:l.iid,qty:num(l.qty),rate:num(l.rate),disc:num(l.disc),gst:num(l.gst),batch:l.batch||'',exp:l.exp||''}));if(!v.lines.length)return alert('Add at least one item');
+v.total=calc(v).total;if(v.paid>v.total+0.005)return alert('Paid amount is more than total');
+if(S.cfg.negStock!='yes'&&(T=='sale'||T=='pret')){const m=SM(vf.id),need={};v.lines.forEach(l=>need[l.iid]=(need[l.iid]||0)+l.qty);for(const i in need)if((m[i]||0)<need[i]-1e-9)return alert('Insufficient stock: '+S.items.find(x=>x.id==i).name+' (available '+(m[i]||0)+')')}}
+else if(T=='jrn'){v.jl=vf.jl.map(r=>({l:L(r.n),dr:num(r.dr),cr:num(r.cr)})).filter(r=>r.l&&(r.dr||r.cr));const d=sm(v.jl.map(r=>r.dr)),c=sm(v.jl.map(r=>r.cr));if(!v.jl.length||Math.abs(d-c)>0.005)return alert('Debit and credit must be equal ('+d+' / '+c+')');v.total=d}
+else{v.party=L(vf.pn);if(!v.party)return alert('Select account from the list');v.amt=num(vf.amt);if(v.amt<=0)return alert('Enter amount');if(v.party==v.mode)return alert('Both accounts are same');v.total=v.amt}
+if(vf.isNew){v.no=nextNo(T);S.seq[T]=num(S.seq[T])+1}
+if(T=='purch')v.lines.forEach(l=>{const it=S.items.find(x=>x.id==l.iid);if(it){if(l.batch)it.batch=l.batch;if(l.exp)it.exp=l.exp}});
+const ix=S.vouchers.findIndex(x=>x.id==v.id);ix<0?S.vouchers.push(v):S.vouchers[ix]=v;save();
+const P=led(v.party);if(S.cfg.autoSms=='yes'&&P.phone&&(T=='sale'||T=='rcpt'))sms(P.phone,fm(T=='sale'?S.cfg.tSale:S.cfg.tRcpt,{shop:S.co.name,no:v.no,amt:v.total,paid:v.paid||0,bal:Math.abs(bal(v.party)).toFixed(2),name:P.name}));
+nw?vnew(T):go('r:day')}
+function vdel(id){if(!confirm('Delete this voucher?'))return;S.vouchers=S.vouchers.filter(v=>v.id!=id);save();go('r:day')}
+function printV(id){const v=S.vouchers.find(x=>x.id==id),c=calc(v),P=led(v.party),co=S.co;
+const rows=v.lines.map((l,i)=>{const it=S.items.find(x=>x.id==l.iid)||{};return '<tr><td>'+(i+1)+'</td><td>'+esc(it.name)+'</td><td>'+esc(l.batch||it.batch||'')+'</td><td>'+l.qty+' '+esc(it.unit||'')+'</td><td>'+l.rate+'</td><td>'+l.gst+'%</td><td align=right>'+(l.qty*l.rate*(1-l.disc/100)).toFixed(2)+'</td></tr>'}).join('');
+const html='<meta charset=utf-8><style>body{font:13px sans-serif;padding:16px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #888;padding:4px}</style><h2 style="margin:0">'+esc(co.name)+'</h2>'+esc(co.addr)+' '+esc(co.phone)+'<br>GSTIN: '+esc(co.gstin)+'<br>'+[co.licS&&'Seed Lic '+co.licS,co.licF&&'Fert Lic '+co.licF,co.licP&&'Pesticide Lic '+co.licP].filter(Boolean).map(esc).join(' | ')+'<p>'+esc(S.cfg.head)+'</p><h3>'+VT[v.type]+' '+esc(v.no)+' · '+v.date+'</h3>Party: <b>'+esc(P.name)+'</b> '+esc(P.village||'')+' '+esc(P.phone||'')+'<table><tr><th>#</th><th>Item</th><th>Batch</th><th>Qty</th><th>Rate</th><th>GST</th><th>Amount</th></tr>'+rows+'</table><p align=right>Net '+c.net.toFixed(2)+' · GST '+c.tax.toFixed(2)+' · Round '+c.rnd+'<br><b>Total '+c.total.toFixed(2)+'</b> · Paid '+(v.paid||0)+'</p><p>'+esc(S.cfg.foot)+'</p>';
+const f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);f.contentDocument.write(html);f.contentDocument.close();setTimeout(()=>{f.contentWindow.print();setTimeout(()=>f.remove(),3000)},200)}
+const rem=id=>{const l=led(id);sms(l.phone,fm(S.cfg.tRem,{shop:S.co.name,name:l.name,bal:Math.abs(bal(id)).toFixed(2)}))};
+async function remAll(){const ls=S.ledgers.filter(l=>l.grp=='Sundry Debtors'&&l.phone&&bal(l.id)>0.004);if(ls.length&&confirm('Send SMS reminder to '+ls.length+' farmers?'))for(const l of ls)await sms(l.phone,fm(S.cfg.tRem,{shop:S.co.name,name:l.name,bal:bal(l.id).toFixed(2)}))}
+
+/* ---------- screens & reports ---------- */
+let RT='';
+const R={
+dash(){const sv=S.vouchers.filter(v=>v.type=='sale'),day=d=>sm(sv.filter(v=>v.date==d).map(v=>v.total)),
+rec=sm(S.ledgers.filter(l=>l.grp=='Sundry Debtors').map(l=>Math.max(0,bal(l.id)))),pay=sm(S.ledgers.filter(l=>l.grp=='Sundry Creditors').map(l=>Math.max(0,-bal(l.id)))),
+low=S.items.filter(i=>(stk()[i.id]||0)<=num(i.min)).length,lim=ymd(new Date(Date.now()+90*864e5)),ex=S.items.filter(i=>i.exp&&i.exp<=lim&&(stk()[i.id]||0)>0).length,
+days=[...Array(7)].map((_,i)=>{const d=new Date(Date.now()-(6-i)*864e5);return[d.getDate(),day(ymd(d))]}),mx=Math.max(1,...days.map(d=>d[1])),
+st=(c,l,v)=>'<div class="stat '+c+'"><small>'+l+'</small><b>'+v+'</b></div>',
+rows=S.vouchers.slice(-6).reverse().map(v=>({oc:"vedit('"+v.id+"')",c:[v.date,VT[v.type],esc(v.no),esc(v.party?lname(v.party):'—'),money(v.total)]}));
+page('Gateway of Krushi ERP','<div class="grid">'+st('',"Today's Sales",money(day(ymd())))+st('d','Receivable',money(rec))+st('w','Payable',money(pay))+st('','Cash + Bank',money(bal('cash')+bal('bank')))+st('w','Low Stock',low)+st('w','Expiring (90d)',ex)+'</div><div class="card"><h3>Sales – last 7 days</h3><div class="bars">'+days.map(d=>'<div style="height:'+Math.round(d[1]/mx*100)+'%" title="'+d[1]+'"></div>').join('')+'</div><div class="bl">'+days.map(d=>'<small>'+d[0]+'</small>').join('')+'</div></div><div class="card"><h3>Recent vouchers</h3>'+tbl(['Date','Type','No','Party','>Amount'],rows)+'</div>')},
+m(k){const c=MF[k],L=k=='ledger',h=L?['Name','Group','Mobile','>Balance','']:['Item','Group','Unit','>Stock','>Sale Rate','>Purch Rate',''];
+const rows=S[c.a].map(x=>({s:x.name+' '+(x.grp||'')+' '+(x.phone||'')+(x.village||''),oc:"mform('"+k+"','"+x.id+"')",c:(L?[esc(x.name),esc(x.grp),esc(x.phone),dc(bal(x.id))]:[esc(x.name),esc(x.grp),esc(x.unit),(stk()[x.id]||0).toFixed(2),money(x.sp),money(x.pp)]).concat(['<button class="sm del" onclick="event.stopPropagation();mdel(\''+k+'\',\''+x.id+'\')">✕</button>'])}));
+page(c.t+'s','<div class="bar"><button onclick="mform(\''+k+'\')">+ New</button><input placeholder="Search…" oninput="flt(this.value)" style="max-width:260px"></div>'+tbl(h,rows))},
+g(k){page(k=='groups'?'Item Groups':'Units','<div class="bar"><button onclick="gadd(\''+k+'\')">+ New</button></div>'+tbl(['Name',''],S[k].map(x=>({c:[esc(x),'<button class="sm del" data-n="'+esc(x)+'" onclick="gdel(\''+k+'\',this.dataset.n)">✕</button>']}))))},
+f(){vrender()},
+r(b){({day:rDay,sale:rDay,purch:rDay,led:rLed,tb:rTb,pl:rPl,stk:rStk,rec:()=>rOut(0),pby:()=>rOut(1),gst:rGst,exp:rExp})[b](b)},
+u(b){if(b=='sms')page('SMS Outbox','<div class="bar"><button onclick="flush().then(()=>go(tab))">Send pending now</button><button class="ghost" onclick="modal(\'Test SMS\',[{k:\'to\',l:\'Mobile\',v:\'\'},{k:\'m\',l:\'Message\',v:\'Test from Krushi ERP\'}],o=>sms(o.to,o.m))">Send test</button></div>'+tbl(['To','Message'],S.outbox.map(o=>({c:[esc(o.to),esc(o.msg)]}))));
+else page('Backup · Drive Sync','<div class="card"><h3>Google Drive</h3><p class="mut">Last sync: '+(S.settings.last?new Date(S.settings.last).toLocaleString():'never')+'</p><button onclick="sync(true)">Sync now</button> <button class="ghost" onclick="restore()">Restore from Drive</button></div><div class="card"><h3>File backup</h3><button class="ghost" onclick="exp()">Export file</button> <button class="ghost" onclick="$(\'#imp\').click()">Import file</button><input id="imp" type="file" accept=".json" hidden onchange="imp(this.files[0])"></div>')},
+c(b){const P={co:['Company',cfi('co.name','Company / Shop name')+cfi('co.addr','Address')+cfi('co.phone','Phone')+cfi('co.gstin','GSTIN')+cfi('co.state','State')+cfi('co.fy','Financial year')+cfi('co.licS','Seed licence no.')+cfi('co.licF','Fertilizer licence no.')+cfi('co.licP','Pesticide licence no.')],
+ft:['Features',cfi('cfg.gst','GST on vouchers',['yes','no'])+cfi('cfg.batch','Batch / expiry entry on purchase',['yes','no'])+cfi('cfg.negStock','Allow negative stock',['no','yes'])+cfi('cfg.round','Round off total',['yes','no'])+cfi('cfg.dec','Decimal places',['0','2','3'])+cfi('cfg.narr','Default narration')],
+vs:['Voucher Series',Object.keys(VT).map(k=>cfi('cfg.pre.'+k,VT[k]+' prefix')+cfi('seq.'+k,VT[k]+' – last number used','n')).join('')],
+pr:['Print',cfi('cfg.head','Bill header note')+cfi('cfg.foot','Bill footer / terms')],
+sms:['SMS API',cfi('settings.smsUrl','API URL  ({to} {msg})')+cfi('settings.smsMethod','Method',['GET','POST'])+cfi('settings.smsBody','POST body JSON ({to} {msg})')+cfi('settings.smsHeaders','Headers JSON')+cfi('cfg.autoSms','Auto SMS on sale / receipt',['no','yes'])+cfi('cfg.tSale','Sale SMS text')+cfi('cfg.tRcpt','Receipt SMS text')+cfi('cfg.tRem','Reminder SMS text')],
+drv:['Google Drive',cfi('settings.clientId','OAuth Client ID')+cfi('settings.file','Backup file name')+'<button onclick="sync(true)">Sync now</button>'],
+sec:['Security',cfi('cfg.pin','App PIN (blank = no lock)')]}[b];page(P[0],'<div class="card f2">'+P[1]+'</div>')}};
+function rDay(b){const T=VT[b]?b:RT,vs=S.vouchers.filter(v=>inR(v.date)&&(!T||v.type==T)).sort((a,c)=>a.date<c.date?-1:1);
+const rows=vs.map(v=>({oc:"vedit('"+v.id+"')",c:[v.date,VT[v.type],esc(v.no),esc(v.party?lname(v.party):'—'),money(v.total),esc(v.narr)]}));
+page(VT[b]?VT[b]+' Register':'Day Book',rb(VT[b]?'':'<select onchange="RT=this.value;go(tab)"><option value="">All types</option>'+Object.keys(VT).map(k=>'<option value="'+k+'"'+(RT==k?' selected':'')+'>'+VT[k]+'</option>').join('')+'</select>')+tbl(['Date','Type','No','Particulars','>Amount','Narration'],rows,['','','','Total',money(sm(vs.map(v=>v.total))),'']))}
+function rLed(){const l=led(RL);let run=(l.ot=='Cr'?-1:1)*num(l.op);const ent=[];
+S.vouchers.slice().sort((a,c)=>a.date<c.date?-1:1).forEach(v=>post(v).filter(p=>p.l==RL).forEach(p=>{if(v.date<RF.from)run+=p.dr-p.cr;else if(v.date<=RF.to)ent.push({v,p})}));
+let b=run,d=0,c=0;const rows=ent.map(e=>{b+=e.p.dr-e.p.cr;d+=e.p.dr;c+=e.p.cr;return{oc:"vedit('"+e.v.id+"')",c:[e.v.date,VT[e.v.type]+' '+esc(e.v.no),esc(e.v.party&&e.v.party!=RL?lname(e.v.party):esc(e.v.narr)),e.p.dr?money(e.p.dr):'',e.p.cr?money(e.p.cr):'',dc(b)]}});
+page('Ledger',rb('<select onchange="RL=this.value;go(tab)">'+S.ledgers.map(x=>'<option value="'+x.id+'"'+(x.id==RL?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select>')+'<p>Opening balance: <b>'+dc(run)+'</b></p>'+tbl(['Date','Voucher','Particulars','>Debit','>Credit','>Balance'],rows,['','','Closing',money(d),money(c),dc(b)]))}
+function rTb(){const ls=S.ledgers.filter(l=>Math.abs(bal(l.id))>0.004);let d=0,c=0;const rows=ls.map(l=>{const b=bal(l.id);b>0?d+=b:c-=b;return{oc:"RL='"+l.id+"';go('r:led')",c:[esc(l.name),esc(l.grp),b>0?money(b):'',b<0?money(-b):'']}});
+page('Trial Balance','<p class="mut">All periods, as on today</p>'+tbl(['Account','Group','>Debit','>Credit'],rows,['Total','',money(d),money(c)])+(Math.abs(d-c)>0.01?'<p class="bad">Difference in opening balances: '+money(d-c)+'</p>':''))}
+function rPl(){const cl=sm(S.items.map(i=>Math.max(0,stk()[i.id]||0)*num(i.pp))),op=sm(S.items.map(i=>num(i.op)*num(i.pp))),sa=-gs('Sales Accounts'),pu=gs('Purchase Accounts'),de=gs('Direct Expenses'),di=-gs('Direct Incomes'),ie=gs('Indirect Expenses'),ii=-gs('Indirect Incomes'),gp=sa+cl-op-pu-de+di,np=gp-ie+ii;
+const r=(a,b)=>({c:[a,money(b)]});page('Profit & Loss','<p class="mut">All periods · stock valued at purchase price</p>'+tbl(['Particulars','>Amount'],[r('Sales (net of returns)',sa),r('Closing stock',cl),r('Opening stock',-op),r('Purchases (net of returns)',-pu),r('Direct expenses',-de),r('Direct incomes',di),r('<b>Gross profit</b>',gp),r('Indirect expenses',-ie),r('Indirect incomes',ii)],['Net profit / (loss)',money(np)]))}
+function rStk(){let tv=0;const rows=S.items.map(i=>{const q=stk()[i.id]||0,v=q*num(i.pp);tv+=v;return{c:[esc(i.name),esc(i.grp),esc(i.unit),num(i.op).toFixed(2),'<span class="'+(q<=num(i.min)?'bad':'')+'">'+q.toFixed(2)+'</span>',money(i.pp),money(v)]}});
+page('Stock Summary',tbl(['Item','Group','Unit','>Opening','>Closing','>Rate','>Value'],rows,['Total','','','','','',money(tv)]))}
+function rOut(cr){const ls=S.ledgers.filter(l=>l.grp==(cr?'Sundry Creditors':'Sundry Debtors')&&Math.abs(bal(l.id))>0.004).sort((a,b)=>cr?bal(a.id)-bal(b.id):bal(b.id)-bal(a.id));
+const rows=ls.map(l=>({oc:"RL='"+l.id+"';go('r:led')",c:[esc(l.name),esc(l.village||''),esc(l.phone||''),dc(bal(l.id)),cr?'':'<button class="sm" onclick="event.stopPropagation();rem(\''+l.id+'\')">SMS</button>']}));
+page(cr?'Outstanding Payable':'Outstanding Receivable (Udhari)',(cr?'':'<div class="bar"><button onclick="remAll()">SMS reminder to all</button></div>')+tbl(['Name','Village','Mobile','>Balance',''],rows,['Total','','',money(sm(ls.map(l=>Math.abs(bal(l.id))))),'']))}
+function rGst(){const m={};S.vouchers.filter(v=>ITY[v.type]&&inR(v.date)).forEach(v=>{const s={sale:1,sret:-1}[v.type]||0,p={purch:1,pret:-1}[v.type]||0;v.lines.forEach(l=>{const a=l.qty*l.rate*(1-l.disc/100),k=num(l.gst);m[k]=m[k]||[0,0,0,0];m[k][0]+=s*a;m[k][1]+=s*a*k/100;m[k][2]+=p*a;m[k][3]+=p*a*k/100})});
+const ks=Object.keys(m).sort((a,b)=>a-b),T=[0,1,2,3].map(i=>sm(ks.map(k=>m[k][i])));
+page('GST Summary',rb()+tbl(['GST %','>Sales taxable','>Output GST','>Purchase taxable','>Input GST'],ks.map(k=>({c:[k+'%',...m[k].map(money)]})),['Total',...T.map(money)])+'<p><b>Net GST payable: '+money(T[1]-T[3])+'</b></p>')}
+function rExp(){const lim=ymd(new Date(Date.now()+90*864e5)),I=S.items,ex=I.filter(i=>i.exp&&i.exp<=lim&&(stk()[i.id]||0)>0).sort((a,b)=>a.exp<b.exp?-1:1),lw=I.filter(i=>(stk()[i.id]||0)<=num(i.min));
+page('Expiry / Low Stock','<h3>Expiring within 90 days</h3>'+tbl(['Item','Batch','Expiry','>Stock'],ex.map(i=>({c:[esc(i.name),esc(i.batch),'<span class="'+(i.exp<ymd()?'bad':'')+'">'+i.exp+'</span>',(stk()[i.id]||0).toFixed(2)]})))+'<h3 style="margin-top:14px">Low stock</h3>'+tbl(['Item','>Stock','>Minimum'],lw.map(i=>({c:[esc(i.name),(stk()[i.id]||0).toFixed(2),num(i.min)]}))))}
+
+/* ---------- start ---------- */
+addEventListener('keydown',e=>{const m={F4:'cntr',F5:'pay',F6:'rcpt',F7:'jrn',F8:e.ctrlKey?'sret':'sale',F9:e.ctrlKey?'pret':'purch'}[e.key];
+if(m){e.preventDefault();vnew(m)}else if(tab=='f'&&e.key=='Escape'&&!document.querySelector('dialog[open]')){if(confirm('Close without saving?'))go('dash')}else if(tab=='f'&&e.ctrlKey&&e.key=='s'){e.preventDefault();vsave(0)}});
+(async()=>{const d=await load();if(d)S=mg(clone(DEF),d);
+if(S.cfg.pin)await new Promise(res=>{const o=document.createElement('div');o.id='lock';o.innerHTML='<div class="card"><h3>🔒 Krushi ERP</h3><input id="pi" type="password" placeholder="PIN"><br><br><button id="pb">Unlock</button></div>';document.body.appendChild(o);const f=()=>{if($('#pi').value===S.cfg.pin){o.remove();res()}else $('#pi').value=''};$('#pb').onclick=f;$('#pi').onkeydown=e=>e.key=='Enter'&&f();$('#pi').focus()});
+go('dash');if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+addEventListener('online',()=>{pill();flush();sync(false)});addEventListener('offline',()=>pill());
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();setTimeout(()=>{flush();sync(false)},1500)})();
+
+</script></body></html>
